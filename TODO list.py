@@ -3,7 +3,7 @@ import sqlite3
 class Todo:
     
     def __init__(self):
-        self.connection = sqlite3.connect(r'C:\Users\A\Desktop\Zaid\Extracurricular\Python\Practice\docs\todo.db')
+        self.connection = sqlite3.connect(r'C:\Users\A\Desktop\Zaid\Extracurricular\Python\Practice\docs\list.db')
         self.cursor_ = self.connection.cursor()
         self.create_task_table()
         
@@ -21,6 +21,7 @@ class Todo:
         if self.find_task(task) is not None:
             print("Error: Task already exists.")
             return
+        Todo.delete_task(task)
             
         priority = int(input("Enter task priority: "))
         if priority < 1:
@@ -44,12 +45,13 @@ class Todo:
         for record in self.cursor_:
             print(record)
 
+    def delete_task(self, task_name):
+        self.cursor_.execute("DELETE FROM tasks WHERE task = task_name")
+        self.connection.commit()
+
 db = Todo()
 db.add_task()
 print("---------")
 print("TODO List")
 print("---------")
-db.show_tasks()      
-            
-            
-            
+db.show_tasks()
