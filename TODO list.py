@@ -1,57 +1,72 @@
 import sqlite3
+import datetime as dt
 
 class Todo:
-    
     def __init__(self):
-        self.connection = sqlite3.connect(r'path\todo.db')
-        self.cursor_ = self.connection.cursor()
-        self.create_task_table()
+        # Initialize connection do database
+        self.connection = sqlite3.connect('todo.db')
+        self.cur = self.connection.cursor()
+        self.create_table()
         
-    def create_task_table(self):
-        self.cursor_.execute('''CREATE TABLE IF NOT EXISTS tasks (
+    def create_table(self):
+        # Make sure table exists
+        self.cur.execute('''CREATE TABLE IF NOT EXISTS tasks (
                                 id INTEGER PRIMARY KEY,
                                 task STRING NOT NULL,
-                                priority INTEGER NOT NULL);''')
-        
-    def add_task(self):
-        task = input("Enter task name: ")
-        if task.strip() == "":
-            print("Error: Task can not be an empty string.")
-            return
-        if self.find_task(task) is not None:
-            print("Error: Task already exists.")
-            return
-            
-        priority = int(input("Enter task priority: "))
-        if priority < 1:
-            print("Error: Priority can not be less than 1.")
-            return
-        
-        self.cursor_.execute("INSERT INTO tasks (task, priority) VALUES (?,?)", (task, priority))
+                                date DATE NOT NULL);''')
+
+    # Create new task    
+    def add_task(self, task, date):
+        self.cur.execute("INSERT INTO tasks (task, date) VALUES (?,?)", (task, date))
         self.connection.commit()
     
-    def find_task(self, task_name):
-        self.cursor_.execute("SELECT * FROM tasks")
+    # Find a particular task
+    def find_task(self, key):
+        self.cur.execute(f"SELECT * FROM tasks WHERE id = ?", (key,))
+        row = self.cur.fetchone()
         
-        for record in self.cursor_:
-            if record[1] == task_name:
-                return record
+        if (row): 
+            return row
         
         return None
-        
+    
+    # Display all tasks
     def show_tasks(self):
-        self.cursor_.execute("SELECT * FROM tasks")
-        for record in self.cursor_:
+        self.cur.execute("SELECT * FROM tasks")
+        for record in self.cur:
             print(record)
 
-    def delete_task(self, task_name):
-        self.cursor_.execute(f"DELETE FROM tasks WHERE task == {task_name}")
+    # Update a particular task
+    # TODO: Define custom exception for incorrect function call
+    def update_task(self, key, task = "", date = -1):
+        if (task != "" and date != -1):
+            self.cur.execute("UPDATE tasks SET task = ?, date = ? WHERE id = ?", (task, date, key,))
+        elif (task != ""):
+            self.cur.execute("UPDATE tasks SET task = ? WHERE id = ?", (task, key,))
+        elif (date != -1):
+            self.cur.execute("UPDATE tasks SET date = ? WHERE id = ?", (date, key,))
+        else:
+            raise BaseException
+        
         self.connection.commit()
 
+    # Delete a particular task
+    def delete_task(self, key):
+        self.cur.execute(f"DELETE FROM tasks WHERE id = ?", (key,))
+        self.connection.commit()
+
+    # Delete all tasks
+    def delete_all(self):
+        self.cur.execute("DELETE FROM tasks")
+        self.connection.commit()
+
+
 db = Todo()
-db.add_task()
-print("---------")
-print("TODO List")
-print("---------")
+db.add_task("Drink water", dt.date(2024, 12, 2))
 db.show_tasks()
-db.delete_task("Drink")
+print("----------------")
+db.update_task(1, "Updated task")
+db.show_tasks()
+db.delete_all()
+print("---------------")
+db.show_tasks()
