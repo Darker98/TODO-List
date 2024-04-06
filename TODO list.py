@@ -1,15 +1,18 @@
 import sqlite3
-import datetime as dt
+
+class UpdateException(Exception):
+    def __init__(self, message = "Called update_task() without any task or date to modify"):
+        super().__init__(message)
 
 class Todo:
     def __init__(self):
-        # Initialize connection do database
+        # Initialize connection to database
         self.connection = sqlite3.connect('todo.db')
         self.cur = self.connection.cursor()
         self.create_table()
-        
+    
+    # Make sure table exists
     def create_table(self):
-        # Make sure table exists
         self.cur.execute('''CREATE TABLE IF NOT EXISTS tasks (
                                 id INTEGER PRIMARY KEY,
                                 task STRING NOT NULL,
@@ -37,7 +40,6 @@ class Todo:
             print(record)
 
     # Update a particular task
-    # TODO: Define custom exception for incorrect function call
     def update_task(self, key, task = "", date = -1):
         if (task != "" and date != -1):
             self.cur.execute("UPDATE tasks SET task = ?, date = ? WHERE id = ?", (task, date, key,))
@@ -46,7 +48,7 @@ class Todo:
         elif (date != -1):
             self.cur.execute("UPDATE tasks SET date = ? WHERE id = ?", (date, key,))
         else:
-            raise BaseException
+            raise UpdateException()
         
         self.connection.commit()
 
@@ -59,14 +61,3 @@ class Todo:
     def delete_all(self):
         self.cur.execute("DELETE FROM tasks")
         self.connection.commit()
-
-
-db = Todo()
-db.add_task("Drink water", dt.date(2024, 12, 2))
-db.show_tasks()
-print("----------------")
-db.update_task(1, "Updated task")
-db.show_tasks()
-db.delete_all()
-print("---------------")
-db.show_tasks()
